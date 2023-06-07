@@ -31,6 +31,28 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+
+    const classCollection = client.db('SH75Db').collection('classes');
+
+    //get api for popular classes
+
+    app.get('/popular', async (req, res) => {
+      const query = req.body;
+      const result = await classCollection.find(query).sort({ number_of_student: -1 }).toArray();
+      res.send(result);
+    })
+
+
+    // app.post('/addClass', async (req,res)=>{
+    //   const body = req.body;
+    //   const result = await classCollection.insertOne(body);
+    //   res.send(result)
+
+    //   console.log(result);
+    // })
+
+
+
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
