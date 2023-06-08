@@ -34,6 +34,7 @@ async function run() {
   try {
 
     const classCollection = client.db('SH75Db').collection('classes');
+    const selectedCollection = client.db('SH75Db').collection('selected');
     const usersCollection = client.db("SH75Db").collection("users");
 
     //get api for  classes and instructors
@@ -55,21 +56,21 @@ async function run() {
 
     // student's selected course  related apis
   
-    app.get('/classes', async (req, res) => {
+    app.get('/SelectedClasses', async (req, res) => {
       const email = req.query.email;
-
+      console.log(email);
       if (!email) {
         res.send([]);
       }
 
-      const query = { email: email };
-      const result = await classCollection.find(query).toArray();
+      const query = { email: email};
+      const result = await selectedCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.post('/classes', async (req, res) => {
-      const item = req.body;
-      const result = await classCollection.insertOne(item);
+    app.post('/selectedClasses', async (req, res) => {
+      const cls = req.body;
+      const result = await selectedCollection.insertOne(cls);
       res.send(result);
     })
 
