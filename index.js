@@ -35,10 +35,10 @@ const verifyJWT = (req, res, next) => {
 
 
 
-const uri = 'mongodb://0.0.0.0:27017'
+// const uri = 'mongodb://0.0.0.0:27017'
 
 
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bduz0qc.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bduz0qc.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -135,7 +135,6 @@ async function run() {
       if (req.decoded.email !== email) {
         res.send({ admin: false })
       }
-
       const query = { email: email }
       const user = await usersCollection.findOne(query);
       const result = { admin: user?.role === 'admin' }
@@ -151,11 +150,23 @@ async function run() {
           role: 'admin'
         },
       };
-
       const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
-
     })
+
+
+    app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ instructor: false })
+      }
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      const result = { instructor: user?.role === 'instructor' }
+      res.send(result);
+    })
+
     app.patch('/users/instructor/:id', async (req, res) => {
       const id = req.params.id;
       console.log(id);
@@ -171,6 +182,34 @@ async function run() {
 
     })
 
+    app.get('/users/student/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ student: false })
+      }
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      const result = { student: user?.role === 'student' }
+      res.send(result);
+    })
+
+    app.get('/admin-stats', verifyJWT, async (req, res) => {
+      const users = await usersCollection.estimatedDocumentCount();
+      const classes = await selectedCollection.estimatedDocumentCount();
+      const orders = await paymentCollection.estimatedDocumentCount();
+
+
+      const payments = await paymentCollection.find().toArray();
+      const revenue = payments.reduce( ( sum, payment) => sum + payment.price, 0)
+
+      res.send({
+        revenue,
+        users,
+        classes,
+        orders
+      })
+    })
 
 
 
