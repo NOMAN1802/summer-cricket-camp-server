@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const port = process.env.PORT || 5000
@@ -13,6 +14,9 @@ const corsOptions = {
 }
 app.use(cors(corsOptions))
 app.use(express.json())
+
+
+
 
 
 const uri = 'mongodb://0.0.0.0:27017'
@@ -33,9 +37,22 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
+   
+    
+    // Connect the client to the server	(optional starting in v4.7)
+    await client.connect();
+
     const classCollection = client.db('SH75Db').collection('classes');
     const selectedCollection = client.db('SH75Db').collection('selected');
     const usersCollection = client.db("SH75Db").collection("users");
+
+
+   
+    app.post('/jwt', (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+      res.send({ token })
+    })
 
     //get api for  classes and instructors
 
@@ -46,19 +63,10 @@ async function run() {
     })
 
 
-    // app.post('/addClass', async (req,res)=>{
-    //   const body = req.body;
-    //   const result = await classCollection.insertOne(body);
-    //   res.send(result)
-
-    //   console.log(result);
-    // })
-
     // student's selected course  related apis
   
     app.get('/SelectedClasses', async (req, res) => {
       const email = req.query.email;
-      console.log(email);
       if (!email) {
         res.send([]);
       }
@@ -100,15 +108,6 @@ async function run() {
       res.send(result);
     });
 
-    // app.get('/users/admin/:email', async (req, res) => {
-    //   const email = req.params.email;
-
-    //   const query = { email: email }
-    //   const user = await usersCollection.findOne(query);
-    //   const result = { admin: user?.role === 'admin' }
-    //   res.send(result);
-    // })
-
     app.patch('/users/admin/:id', async (req, res) => {
       const id = req.params.id;
       console.log(id);
@@ -123,10 +122,24 @@ async function run() {
       res.send(result);
 
     })
+    app.patch('/users/instructor/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: 'instructor'
+        },
+      };
+
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+
+    })
 
 
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
