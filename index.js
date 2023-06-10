@@ -35,10 +35,10 @@ const verifyJWT = (req, res, next) => {
 
 
 
-// const uri = 'mongodb://0.0.0.0:27017'
+const uri = 'mongodb://0.0.0.0:27017'
 
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bduz0qc.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bduz0qc.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -53,17 +53,19 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
-   
-    
+
+
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     const classCollection = client.db('SH75Db').collection('classes');
     const selectedCollection = client.db('SH75Db').collection('selected');
     const usersCollection = client.db("SH75Db").collection("users");
+    const addClassCollection = client.db("SH75Db").collection("addClass");
+    const paymentCollection = client.db("SH75Db").collection("payments");
 
 
-   
+
     app.post('/jwt', (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
@@ -80,8 +82,8 @@ async function run() {
 
 
     // student's selected course  related apis
-  
-    app.get('/SelectedClasses',verifyJWT, async (req, res) => {
+
+    app.get('/SelectedClasses', verifyJWT, async (req, res) => {
       const email = req.query.email;
       if (!email) {
         res.send([]);
@@ -92,7 +94,7 @@ async function run() {
         return res.status(403).send({ error: true, message: 'forbidden access' })
       }
 
-      const query = { email: email};
+      const query = { email: email };
       const result = await selectedCollection.find(query).toArray();
       res.send(result);
     });
@@ -120,7 +122,7 @@ async function run() {
     app.post('/users', async (req, res) => {
       const user = req.body;
       user.role = 'student';
-      const query = { email: user.email, role: user.role}
+      const query = { email: user.email, role: user.role }
       const existingUser = await usersCollection.findOne(query);
       if (existingUser) {
         return res.send({ message: 'user already exists' })
@@ -193,7 +195,46 @@ async function run() {
       const result = { student: user?.role === 'student' }
       res.send(result);
     })
+    // add class api
 
+   
+    app.get('/addClass', async (req, res) => {
+      const result = await addClassCollection.find().toArray();
+      res.send(result);
+    });
+    app.post('/addClass', async (req,res)=>{
+      const body = req.body;
+      body.status = 'pending'
+      const result = await addClassCollection.insertOne(body);
+      res.send(result)
+
+      console.log(result);
+    })
+ 
+    // create payment intent
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
+    // payment related api
+    app.post('/payments', verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+      const deleteResult = await selectedCollection.deleteMany(query)
+
+      res.send({ insertResult, deleteResult });
+    })
     app.get('/admin-stats', verifyJWT, async (req, res) => {
       const users = await usersCollection.estimatedDocumentCount();
       const classes = await selectedCollection.estimatedDocumentCount();
@@ -201,7 +242,7 @@ async function run() {
 
 
       const payments = await paymentCollection.find().toArray();
-      const revenue = payments.reduce( ( sum, payment) => sum + payment.price, 0)
+      const revenue = payments.reduce((sum, payment) => sum + payment.price, 0)
 
       res.send({
         revenue,
