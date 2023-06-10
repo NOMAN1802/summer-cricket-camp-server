@@ -64,7 +64,7 @@ async function run() {
     // const addClassCollection = client.db("SH75Db").collection("addClass");
     const paymentCollection = client.db("SH75Db").collection("payments");
 
-
+  // jwt token 
 
     app.post('/jwt', (req, res) => {
       const user = req.body;
@@ -80,6 +80,24 @@ async function run() {
       res.send(result);
     })
 
+    // approve class get api 
+    app.get("/classes/approved", async (req, res) => {
+     
+     const approve = req.body;
+     const query = {
+      status:  'approved'
+      
+     }
+      
+      const result = await classCollection
+        .find(query)
+        .sort({ number_of_student: -1 })
+        .toArray();
+      res.send(result);
+    });
+
+
+  //  status change api 
     
     app.patch('/classes/approved/:id', async (req, res) => {
       const id = req.params.id;
@@ -107,6 +125,8 @@ async function run() {
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
+
+    // admin feedback api 
     app.patch('/classes/feedbackDenied/:id', async (req, res) => {
       const id = req.params.id;
       console.log(id);
