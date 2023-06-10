@@ -94,6 +94,7 @@ async function run() {
       res.send(result);
 
     })
+
     app.patch('/classes/denied/:id', async (req, res) => {
       const id = req.params.id;
       console.log(id);
@@ -103,10 +104,32 @@ async function run() {
           status: 'denied'
         },
       };
-
       const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
-
+    })
+    app.patch('/classes/feedbackDenied/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          feedback: ' your class is denied'
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    })
+    app.patch('/classes/feedbackApprove/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          feedback: ' your class is Approved'
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
     })
 
     // student's selected course  related apis
