@@ -61,7 +61,7 @@ async function run() {
     const classCollection = client.db('SH75Db').collection('classes');
     const selectedCollection = client.db('SH75Db').collection('selected');
     const usersCollection = client.db("SH75Db").collection("users");
-    const addClassCollection = client.db("SH75Db").collection("addClass");
+    // const addClassCollection = client.db("SH75Db").collection("addClass");
     const paymentCollection = client.db("SH75Db").collection("payments");
 
 
@@ -80,6 +80,34 @@ async function run() {
       res.send(result);
     })
 
+    
+    app.patch('/classes/approved/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: 'approved'
+        },
+      };
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+
+    })
+    app.patch('/classes/denied/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: 'denied'
+        },
+      };
+
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+
+    })
 
     // student's selected course  related apis
 
@@ -197,15 +225,17 @@ async function run() {
     })
     // add class api
 
-   
-    app.get('/addClass', async (req, res) => {
-      const result = await addClassCollection.find().toArray();
-      res.send(result);
-    });
+    app.get('/addClass/:email', async (req, res) => {
+      const email = req.params.email
+      const query = { email : email }
+      const result = await classCollection.find(query, email).toArray()
+      res.send(result)
+    })
+
     app.post('/addClass', async (req,res)=>{
       const body = req.body;
       body.status = 'pending'
-      const result = await addClassCollection.insertOne(body);
+      const result = await classCollection.insertOne(body);
       res.send(result)
 
       console.log(result);
@@ -237,8 +267,8 @@ async function run() {
     })
     app.get('/admin-stats', verifyJWT, async (req, res) => {
       const users = await usersCollection.estimatedDocumentCount();
-      const classes = await selectedCollection.estimatedDocumentCount();
-      const orders = await paymentCollection.estimatedDocumentCount();
+      const orders = await selectedCollection.estimatedDocumentCount();
+      const classes = await classCollection.estimatedDocumentCount()
 
 
       const payments = await paymentCollection.find().toArray();
