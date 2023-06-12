@@ -36,10 +36,10 @@ const verifyJWT = (req, res, next) => {
 
 
 
-const uri = 'mongodb://0.0.0.0:27017'
+// const uri = 'mongodb://0.0.0.0:27017'
 
 
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bduz0qc.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bduz0qc.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -184,7 +184,7 @@ async function run() {
       const result = await selectedCollection.insertOne(cls);
       res.send(result);
     })
-
+ 
     app.delete('/selectedClasses/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -338,22 +338,6 @@ async function run() {
       
     })
 
-    
-    // app.post('/enrolled', async (req, res) => {
-    //   const payment = req.body;
-    //   const query = {
-    //     $set: {
-    //       state: 'enrol',
-    //       seat: 0,
-    //     },
-    //     $inc:{
-    //       seat: 1
-    //     }
-    //   };
-    //   const result = await selectedCollection.updateOne(filter, query);
-    //   res.send(result);
-    // })
-    // admin stats api 
 
     app.get('/admin-stats', verifyJWT, async (req, res) => {
       const users = await usersCollection.estimatedDocumentCount();
