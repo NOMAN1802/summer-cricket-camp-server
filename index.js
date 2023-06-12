@@ -62,7 +62,7 @@ async function run() {
     const classCollection = client.db('SH75Db').collection('classes');
     const selectedCollection = client.db('SH75Db').collection('selected');
     const usersCollection = client.db("SH75Db").collection("users");
-    const paymentCollection = client.db("bistroDb").collection("payments");
+    const paymentCollection = client.db("SH75Db").collection("payments");
 
   // jwt token 
 
@@ -237,7 +237,7 @@ async function run() {
     })
 
 
-    app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+    app.get('/users/instructor/:email',verifyJWT,  async (req, res) => {
       const email = req.params.email;
 
       if (req.decoded.email !== email) {
@@ -277,12 +277,17 @@ async function run() {
     })
     // add class api
 
-    app.get('/addClass/:email', async (req, res) => {
-      const email = req.params.email
-      const query = { email : email }
-      const result = await classCollection.find(query, email).toArray()
+    app.get('/getBy/:email', async (req, res) => {
+      const email = req.params.email;
+      console.log('email is',email);
+      const query = { instructor_email : email }
+      const result = await classCollection.find(query).toArray()
+      console.log(result);
       res.send(result)
+      
+      
     })
+  
 
     app.post('/addClass', async (req,res)=>{
       const body = req.body;
@@ -317,28 +322,37 @@ async function run() {
 
       const insertResult = await paymentCollection.insertOne(payment);
 
-      const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+      const query = { email: payment.email }
       const deleteResult = await selectedCollection.deleteOne(query)
-
+      console.log(insertResult, deleteResult);
       res.send({ insertResult, deleteResult });
     })
-
-    app.patch('/payment/:id', async (req, res) => {
-      const id = req.params.id;
-      console.log(id);
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          state: 'enrol',
-          seat: 0,
-        },
-        $inc:{
-          seat: 1,
-        }
-      };
-      const result = await paymentCollection.updateOne(filter, updateDoc);
-      res.send(result);
+    app.get('/enroll/:email', async (req, res) => {
+      const email = req.params.email;
+      console.log('email is',email);
+      const query = { email : email }
+      const result = await paymentCollection.find(query).toArray()
+      console.log(result);
+      res.send(result)
+      
+      
     })
+
+    
+    // app.post('/enrolled', async (req, res) => {
+    //   const payment = req.body;
+    //   const query = {
+    //     $set: {
+    //       state: 'enrol',
+    //       seat: 0,
+    //     },
+    //     $inc:{
+    //       seat: 1
+    //     }
+    //   };
+    //   const result = await selectedCollection.updateOne(filter, query);
+    //   res.send(result);
+    // })
     // admin stats api 
 
     app.get('/admin-stats', verifyJWT, async (req, res) => {
